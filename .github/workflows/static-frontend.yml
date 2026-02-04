@@ -21,7 +21,7 @@ on:
 jobs:
   build-docker:
     name: Build Docker Image
-    runs-on: [self-hosted, nuc-runner]
+    runs-on: [nuc-apps-runner]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
   
   deploy:
       name: Start Docker Contaienr
-      runs-on: [self-hosted, nuc-runner]
+      runs-on: [nuc-apps-runner]
       needs: [build-docker]
       
       steps:
