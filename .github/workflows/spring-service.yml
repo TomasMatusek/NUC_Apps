@@ -20,7 +20,7 @@ on:
 jobs:
   run-tests:
     name: Run Unit Tests
-    runs-on: [nuc-apps-runner]
+    runs-on: [self-hosted]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
 
   build-docker:
     name: Build Docker Image
-    runs-on: [snuc-apps-runner]
+    runs-on: [self-hosted]
     needs: run-tests
     environment: ${{ github.event.inputs.environment || 'test' }}
     steps:
@@ -75,7 +75,7 @@ jobs:
 
   deploy:
     name: Start Docker Container
-    runs-on: [nuc-apps-runner]
+    runs-on: [self-hosted]
     needs: [run-tests, build-docker]
     if: ${{ github.event.inputs.action == 'build-and-deploy' }}
     steps:
