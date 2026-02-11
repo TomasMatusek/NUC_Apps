@@ -3,6 +3,9 @@ run-name: Deploy ${{ github.ref_name }} to ${{ github.event.inputs.environment |
 
 on:
   push:
+    branches:
+      - main
+      - develop
   workflow_dispatch:
     inputs:
       environment:
@@ -31,6 +34,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Make gradlew executable
+        working-directory: apps/spring-service
+        run: chmod +x gradlew
+
       - name: Run tests
         working-directory: apps/spring-service
         run: ./gradlew test
@@ -39,26 +46,9 @@ jobs:
     name: Build Docker Image
     runs-on: [self-hosted]
     needs: run-tests
-    environment: ${{ github.event.inputs.environment || 'test' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Populate properties file
-        working-directory: apps/spring-service
-        run: |
-          RESOURCES_DIR="/opt/nuc-apps/spring-service/resources"
-          PROPERTIES_FILE="application-${{ github.event.inputs.environment || 'test' }}.properties"
-          
-          echo "Copying '$PROPERTIES_FILE' from spring-service into directory: $RESOURCES_DIR on host machine, outside of Docker"
-          cp "./src/main/resources/$PROPERTIES_FILE" "$RESOURCES_DIR/$PROPERTIES_FILE"
-
-          chown sonic:sonic -R "$RESOURCES_DIR"
-          chmod 600 "$RESOURCES_DIR/$PROPERTIES_FILE"
-
-          sed -i "s|\${POSTGRES_DB}|${{ vars.POSTGRES_DB }}|g" "$RESOURCES_DIR/$PROPERTIES_FILE"
-          sed -i "s|\${POSTGRES_USER}|${{ vars.POSTGRES_USER }}|g" "$RESOURCES_DIR/$PROPERTIES_FILE"
-          sed -i "s|\${POSTGRES_PASSWORD}|${{ secrets.POSTGRES_PASSWORD }}|g" "$RESOURCES_DIR/$PROPERTIES_FILE"
 
       - name: Docker build
         working-directory: apps/spring-service
@@ -68,33 +58,42 @@ jobs:
           echo "Building version: $VERSION"
           docker build -t spring-service:${VERSION} .
 
-      - name: Clean workspace
+      - name: Clean old Docker images
         run: |
-          echo "Cleaning up workspace $GITHUB_WORKSPACE"
-          rm -rf "$GITHUB_WORKSPACE"/*
+          docker image prune -f --filter "dangling=true"
 
   deploy:
-    name: Start Docker Container
+    name: Deploy to ${{ github.event.inputs.environment || 'test' }}
     runs-on: [self-hosted]
     needs: [run-tests, build-docker]
-    if: ${{ github.event.inputs.action == 'build-and-deploy' }}
+    environment: ${{ github.event.inputs.environment || 'test' }}
+    if: ${{ github.event.inputs.action != 'build-only' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Docker compose stop
+      - name: Stop existing container
         working-directory: apps/spring-service
         run: |
           docker compose stop spring-service || true
           docker compose rm -f spring-service || true
 
-      - name: Docker compose up
+      - name: Deploy with Docker Compose
         working-directory: apps/spring-service
         env:
           COMMIT: ${{ github.sha }}
           VERSION: ${{ github.ref_name }}
           ENVIRONMENT: ${{ github.event.inputs.environment || 'test' }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         run: |
           echo "Deploying version '$VERSION' to environment '$ENVIRONMENT'"
           echo "Commit sha '${COMMIT}'"
-          docker compose up -d --build spring-service
+          docker compose up -d spring-service
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          docker ps | grep spring-service || exit 1
+          echo "✅ Deployment successful"
