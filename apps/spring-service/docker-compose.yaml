@@ -15,4 +15,4 @@ services:
       VERSION: ${VERSION}
       ENVIRONMENT: ${ENVIRONMENT}
       SPRING_PROFILES_ACTIVE: ${ENVIRONMENT}
-      SPRING_CONFIG_LOCATION: "classpath:/application.properties,/opt/nuc-apps/spring-service/resrouces/application.properties"
+      SPRING_CONFIG_LOCATION: "classpath:/application.properties"
