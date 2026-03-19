@@ -1,4 +1,4 @@
-package online.ultimate_homelab.nuc_web_app_spring_service;
+package tmxlab.homelab;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
