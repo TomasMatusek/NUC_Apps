@@ -6,13 +6,42 @@ services:
     ports:
       - "8090:8080"
     volumes:
-      - /opt/nuc-apps/spring-service/resources/:/opt/nuc-apps/spring-service/resrouces:ro
+      - /opt/nuc-apps/spring-service/resources/:/opt/nuc-apps/spring-service/resources:ro
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       COMMIT: ${COMMIT}
       VERSION: ${VERSION}
       ENVIRONMENT: ${ENVIRONMENT}
       SPRING_PROFILES_ACTIVE: ${ENVIRONMENT}
       SPRING_CONFIG_LOCATION: "classpath:/application.properties"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
