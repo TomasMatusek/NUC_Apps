@@ -98,8 +98,8 @@ jobs:
           COMMIT: ${{ github.sha }}
           VERSION: ${{ github.ref_name }}
           ENVIRONMENT: ${{ github.event.inputs.environment || 'test' }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         run: |
           echo "Deploying version '$VERSION' to environment '$ENVIRONMENT'"
