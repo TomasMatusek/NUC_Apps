@@ -4,7 +4,7 @@ services:
     container_name: spring-service
     restart: unless-stopped
     ports:
-      - "8090:8080"
+      - "8090:8090"
     volumes:
       - /opt/nuc-apps/spring-service/resources/:/opt/nuc-apps/spring-service/resources:ro
     environment:
