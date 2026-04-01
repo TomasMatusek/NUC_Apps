@@ -58,6 +58,10 @@ jobs:
 
       - name: Run tests
         working-directory: apps/spring-service
+        env:
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         run: ./gradlew test
 
   build-docker:
